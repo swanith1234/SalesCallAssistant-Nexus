@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+.env/
+
+# Environment variable files
+.env
+
+# Log files and directories
+*.log
+logs/
+KMS/logs/
+
+# Node modules (if using inside agent-starter-react)
+agent-starter-react/node_modules/
+
+# Mac OS and system files
+.DS_Store
+
+# IDE/editor directories and files
+.vscode/
+.idea/
+*.swp
+
+# Python egg files
+*.egg-info/
+.eggs/

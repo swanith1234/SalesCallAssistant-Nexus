@@ -29,50 +29,28 @@ const animationProps = {
     opacity: 0,
     scale: 0,
   },
-  transition: {
-    type: 'spring',
-    stiffness: 675,
-    damping: 75,
-    mass: 1,
-  },
+  // Note: transition is REMOVED from this object!
 };
 
+// Place transition creator outside, to use type explicitly.
+const createTransition = (delay: number) => ({
+  type: 'spring' as const, // FIXED LINE (ensures explicit spring type for TS/Framer Motion)
+  stiffness: 675,
+  damping: 75,
+  mass: 1,
+  delay,
+});
+
 const classNames = {
-  // GRID
-  // 2 Columns x 3 Rows
   grid: [
     'h-full w-full',
     'grid gap-x-2 place-content-center',
     'grid-cols-[1fr_1fr] grid-rows-[90px_1fr_90px]',
   ],
-  // Agent
-  // chatOpen: true,
-  // hasSecondTile: true
-  // layout: Column 1 / Row 1
-  // align: x-end y-center
   agentChatOpenWithSecondTile: ['col-start-1 row-start-1', 'self-center justify-self-end'],
-  // Agent
-  // chatOpen: true,
-  // hasSecondTile: false
-  // layout: Column 1 / Row 1 / Column-Span 2
-  // align: x-center y-center
   agentChatOpenWithoutSecondTile: ['col-start-1 row-start-1', 'col-span-2', 'place-content-center'],
-  // Agent
-  // chatOpen: false
-  // layout: Column 1 / Row 1 / Column-Span 2 / Row-Span 3
-  // align: x-center y-center
   agentChatClosed: ['col-start-1 row-start-1', 'col-span-2 row-span-3', 'place-content-center'],
-  // Second tile
-  // chatOpen: true,
-  // hasSecondTile: true
-  // layout: Column 2 / Row 1
-  // align: x-start y-center
   secondTileChatOpen: ['col-start-2 row-start-1', 'self-center justify-self-start'],
-  // Second tile
-  // chatOpen: false,
-  // hasSecondTile: false
-  // layout: Column 2 / Row 2
-  // align: x-end y-end
   secondTileChatClosed: ['col-start-2 row-start-3', 'place-content-end'],
 };
 
@@ -103,21 +81,15 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
   const isScreenShareEnabled = screenShareTrack && !screenShareTrack.publication.isMuted;
   const hasSecondTile = isCameraEnabled || isScreenShareEnabled;
 
-  const transition = {
-    ...animationProps.transition,
-    delay: chatOpen ? 0 : 0.15, // delay on close
-  };
+  const transition = createTransition(chatOpen ? 0 : 0.15); // FIXED LINE
+
   const agentAnimate = {
     ...animationProps.animate,
     scale: chatOpen ? 1 : 3,
-    transition,
   };
   const avatarAnimate = {
     ...animationProps.animate,
-    transition,
   };
-  const agentLayoutTransition = transition;
-  const avatarLayoutTransition = transition;
 
   const isAvatar = agentVideoTrack !== undefined;
 
@@ -143,7 +115,7 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                   layoutId="agent"
                   {...animationProps}
                   animate={agentAnimate}
-                  transition={agentLayoutTransition}
+                  transition={transition} // FIXED LINE
                   state={agentState}
                   audioTrack={agentAudioTrack}
                   className={cn(chatOpen ? 'h-[90px]' : 'h-auto w-full')}
@@ -156,7 +128,7 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                   layoutId="avatar"
                   {...animationProps}
                   animate={avatarAnimate}
-                  transition={avatarLayoutTransition}
+                  transition={transition} // FIXED LINE
                   videoTrack={agentVideoTrack}
                   className={cn(
                     chatOpen ? 'h-[90px] [&>video]:h-[90px] [&>video]:w-auto' : 'h-auto w-full'
@@ -182,10 +154,7 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                   layoutId="camera"
                   {...animationProps}
                   trackRef={cameraTrack}
-                  transition={{
-                    ...animationProps.transition,
-                    delay: chatOpen ? 0 : 0.15,
-                  }}
+                  transition={createTransition(chatOpen ? 0 : 0.15)} // FIXED LINE
                   className="h-[90px]"
                 />
               )}
@@ -197,10 +166,7 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                   layoutId="screen"
                   {...animationProps}
                   trackRef={screenShareTrack}
-                  transition={{
-                    ...animationProps.transition,
-                    delay: chatOpen ? 0 : 0.15,
-                  }}
+                  transition={createTransition(chatOpen ? 0 : 0.15)} // FIXED LINE
                   className="h-[90px]"
                 />
               )}

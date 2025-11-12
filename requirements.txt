@@ -10,3 +10,26 @@ duckduckgo-search
 langchain_community
 requests
 python-dotenv
+
+# Backend framework
+fastapi
+uvicorn
+
+# MongoDB client
+pymongo
+
+# Environment variable loader
+python-dotenv
+
+# Async utilities
+asyncio
+
+# LangChain & search tools
+langchain_community
+duckduckgo-search
+
+# Mem0 AI memory library
+mem0ai
+
+# CORS middleware
+fastapi[all]

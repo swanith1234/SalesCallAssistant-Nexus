@@ -196,7 +196,7 @@ export default async function Image() {
         >
           <div
             style={{
-              backgroundColor: '#1F1F1F',
+              backgroundColor: '#FFF',
               padding: '2px 8px',
               borderRadius: 4,
               width: 72,

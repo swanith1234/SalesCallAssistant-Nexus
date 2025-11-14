@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 222 20% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 18% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 20% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 220 90% 56%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 220 90% 65%;
+
+    --secondary: 217 20% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 18% 16%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 220 85% 50%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 18% 18%;
+    --input: 217 18% 16%;
+    --ring: 220 90% 56%;
+
+    --radius: 0.75rem;
+    
+    /* Glassmorphism */
+    --glass-bg: 222 18% 12% / 0.6;
+    --glass-border: 220 90% 56% / 0.2;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 90% 56%) 0%, hsl(240 80% 60%) 100%);
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(220 90% 56% / 0.15), transparent 70%);
+    
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsl(220 90% 56% / 0.3);
+    --shadow-elevation: 0 10px 40px hsl(222 20% 4% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

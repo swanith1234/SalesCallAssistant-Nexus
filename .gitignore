@@ -33,3 +33,4 @@ agent-starter-react/node_modules/
 # Python egg files
 *.egg-info/
 .eggs/
+**/node_modules/

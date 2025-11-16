@@ -20,6 +20,7 @@ logs/
 KMS/logs/
 
 # Node modules (if using inside agent-starter-react)
+node_modules/
 agent-starter-react/node_modules/
 
 # Mac OS and system files
@@ -33,4 +34,3 @@ agent-starter-react/node_modules/
 # Python egg files
 *.egg-info/
 .eggs/
-**/node_modules/

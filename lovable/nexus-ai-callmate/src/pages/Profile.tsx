@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { User, Mail, Building, Key, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { User, Mail, Building, Key, Save, Phone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,31 @@ import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { toast } = useToast();
+
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    company: "Acme Corp",
-    apiKey: "sk-xxxxxxxxxxxxxxxxxxxxxxxx",
+    name: "",
+    email: "",
+    company: "",
+    phone: "",
+    apiKey: "sk-xxxxxxxxxxxxxxxxxxxx"
   });
+
+  // -------------------------------
+  // LOAD LOGGED-IN USER DATA
+  // -------------------------------
+  useEffect(() => {
+    const auth = JSON.parse(localStorage.getItem("auth") || "{}");
+
+    if (auth?.user) {
+      setFormData({
+        name: auth.user.full_name || "",
+        email: auth.user.email || "",
+        company: auth.user.company || "",
+        phone: auth.user.phone_number || "",
+        apiKey: "sk-xxxxxxxxxxxxxxxxxxxx"
+      });
+    }
+  }, []);
 
   const handleSave = () => {
     toast({
@@ -26,7 +45,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 pt-24 pb-12 max-w-2xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent">
@@ -44,8 +63,9 @@ const Profile = () => {
               <User className="w-5 h-5 text-primary" />
               Personal Information
             </h2>
-            
+
             <div className="space-y-4">
+              {/* Full Name */}
               <div>
                 <Label htmlFor="name" className="flex items-center gap-2 mb-2">
                   <User className="w-4 h-4" />
@@ -54,11 +74,14 @@ const Profile = () => {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="bg-input/50 border-border focus:border-primary/50"
                 />
               </div>
-              
+
+              {/* Email */}
               <div>
                 <Label htmlFor="email" className="flex items-center gap-2 mb-2">
                   <Mail className="w-4 h-4" />
@@ -68,20 +91,42 @@ const Profile = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  readOnly
                   className="bg-input/50 border-border focus:border-primary/50"
                 />
               </div>
-              
+
+              {/* Phone */}
               <div>
-                <Label htmlFor="company" className="flex items-center gap-2 mb-2">
+                <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
+                  <Phone className="w-4 h-4" />
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                  className="bg-input/50 border-border focus:border-primary/50"
+                />
+              </div>
+
+              {/* Company */}
+              <div>
+                <Label
+                  htmlFor="company"
+                  className="flex items-center gap-2 mb-2"
+                >
                   <Building className="w-4 h-4" />
                   Company
                 </Label>
                 <Input
                   id="company"
                   value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, company: e.target.value })
+                  }
                   className="bg-input/50 border-border focus:border-primary/50"
                 />
               </div>
@@ -89,12 +134,15 @@ const Profile = () => {
           </Card>
 
           {/* API Key Management */}
-          <Card className="p-6 bg-card/40 backdrop-blur-md border-primary/20 animate-slide-in" style={{ animationDelay: "100ms" }}>
+          <Card
+            className="p-6 bg-card/40 backdrop-blur-md border-primary/20 animate-slide-in"
+            style={{ animationDelay: "100ms" }}
+          >
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
               API Key Management
             </h2>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="apiKey" className="flex items-center gap-2 mb-2">
@@ -108,9 +156,7 @@ const Profile = () => {
                     readOnly
                     className="bg-input/50 border-border font-mono text-sm"
                   />
-                  <Button variant="outline">
-                    Regenerate
-                  </Button>
+                  <Button variant="outline">Regenerate</Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Keep your API key secure. Never share it publicly.

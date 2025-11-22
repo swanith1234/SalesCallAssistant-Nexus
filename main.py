@@ -176,6 +176,142 @@ Return strict JSON only:
         }
 
 # -------------------------------------------------------------------
+# ✅ NEW: FULL CONVERSATION ANALYSIS FUNCTION
+# -------------------------------------------------------------------
+
+def analyze_full_conversation(messages: List[dict]) -> dict:
+    """Analyze the entire conversation for comprehensive insights"""
+    
+    if not messages or len(messages) == 0:
+        return {
+            "sentiment": "neutral",
+            "confidence": 0.5,
+            "key_points": ["No conversation data"],
+            "recommendation_to_salesperson": "No messages to analyze.",
+        }
+    
+    # Extract just the conversation text
+    conversation_text = "\n".join([
+        f"{'Customer' if msg['speaker'] == 'user' else 'Agent'}: {msg['text']}"
+        for msg in messages
+    ])
+    
+    # Limit to last 3000 characters to avoid token limits
+    if len(conversation_text) > 3000:
+        conversation_text = conversation_text[-3000:]
+    
+    logging.info(f"📝 Conversation text length: {len(conversation_text)} characters")
+    
+    prompt = f"""
+Analyze this complete sales conversation about AI/ML educational courses:
+
+CONVERSATION:
+{conversation_text}
+
+Provide a comprehensive analysis in ONLY valid JSON format (no markdown, no code blocks):
+
+{{
+  "sentiment": "positive" OR "neutral" OR "negative",
+  "confidence": 0.0 to 1.0,
+  "key_points": ["point1", "point2", "point3"],
+  "customer_interests": ["interest1", "interest2"],
+  "customer_concerns": ["concern1", "concern2"],
+  "recommendation_to_salesperson": "clear actionable recommendation"
+}}
+
+Analysis Guidelines:
+- sentiment: "positive" if customer is interested/engaged, "negative" if explicitly rejecting/upset, "neutral" if undecided
+- confidence: 0.8+ for clear sentiment, 0.5-0.7 for mixed signals
+- key_points: 3-5 most important things from the ENTIRE conversation
+- customer_interests: what did the customer ask about or show interest in?
+- customer_concerns: what objections or hesitations did they express?
+- recommendation: ONE specific action the salesperson should take next
+
+IMPORTANT: Always provide at least 3 key points based on the conversation content.
+"""
+
+    try:
+        logging.info("🤖 Calling Gemini API for full conversation analysis...")
+        
+        resp = genai_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        
+        logging.info("✅ Gemini API responded successfully")
+        
+        raw = (resp.text or "").strip()
+        logging.info(f"📄 Raw response length: {len(raw)} characters")
+        logging.info(f"📄 Raw response preview: {raw[:200]}...")
+
+        # Clean markdown fences
+        if raw.startswith("```"):
+            raw = raw.strip("`")
+            if raw.lower().startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+
+        parsed = json.loads(raw)
+        logging.info("✅ JSON parsed successfully")
+
+        # Combine all points
+        all_key_points = []
+        all_key_points.extend(parsed.get("key_points", []))
+        all_key_points.extend(parsed.get("customer_interests", []))
+        all_key_points.extend(parsed.get("customer_concerns", []))
+        
+        logging.info(f"📊 Extracted {len(all_key_points)} key points from analysis")
+        
+        # If still empty, extract from conversation
+        if not all_key_points:
+            logging.warning("⚠️ No key points in Gemini response, extracting from messages")
+            user_messages = [m for m in messages if m['speaker'] == 'user']
+            if user_messages:
+                all_key_points = [f"Customer message: {m['text'][:80]}" for m in user_messages[:3]]
+            else:
+                all_key_points = ["Conversation completed"]
+
+        result = {
+            "sentiment": parsed.get("sentiment", "neutral").lower(),
+            "confidence": max(float(parsed.get("confidence", 0.6)), 0.5),
+            "key_points": all_key_points[:7],
+            "recommendation_to_salesperson": parsed.get(
+                "recommendation_to_salesperson",
+                "Follow up based on customer interests expressed in the conversation."
+            ),
+        }
+        
+        logging.info(f"✅ Analysis complete: {result['sentiment']} sentiment with {len(result['key_points'])} key points")
+        return result
+        
+    except json.JSONDecodeError as e:
+        logging.error(f"❌ JSON parse error: {e}")
+        logging.error(f"Raw response was: {raw[:500] if 'raw' in locals() else 'N/A'}")
+        # Fallback: Extract user messages as key points
+        user_messages = [m for m in messages if m['speaker'] == 'user']
+        return {
+            "sentiment": "neutral",
+            "confidence": 0.5,
+            "key_points": [m['text'][:100] for m in user_messages[:5]] if user_messages else ["Customer engaged in conversation"],
+            "recommendation_to_salesperson": "Review full transcript for context and follow up appropriately.",
+        }
+    except Exception as e:
+        logging.error(f"❌ Full conversation analysis error: {type(e).__name__}: {str(e)}")
+        logging.exception("Full error traceback:")
+        # Better fallback with actual data
+        user_messages = [m for m in messages if m['speaker'] == 'user']
+        return {
+            "sentiment": "neutral",
+            "confidence": 0.5,
+            "key_points": [
+                f"Conversation had {len(messages)} total messages",
+                f"Customer spoke {len(user_messages)} times",
+                "See transcript for details"
+            ],
+            "recommendation_to_salesperson": "Review the conversation transcript and follow up based on customer's responses.",
+        }
+    
+# -------------------------------------------------------------------
 # ✅ LIVEKIT TOKEN ENDPOINT
 # -------------------------------------------------------------------
 @app.post("/get-token")
@@ -325,39 +461,6 @@ async def get_messages(room_id: str, limit: int = Query(50, ge=1, le=500)):
 # -------------------------------------------------------------------
 # SAVE SESSION → MONGODB
 # -------------------------------------------------------------------
-# @app.post("/save-session", response_model=SaveSessionResponse)
-# async def save_session(room_id: str = Query(...)):
-#     try:
-#         if room_id not in STORE:
-#             raise HTTPException(404, "Room not found")
-
-#         messages = STORE[room_id]
-
-#         session_doc = {
-#             "session_id": room_id,
-#             "timestamp": datetime.now(timezone.utc).isoformat(),
-#             "messages": messages,
-#             "total_messages": len(messages),
-#             "latest_analysis": ANALYSIS_STORE.get(room_id),
-#         }
-
-#         result = sessions_collection.insert_one(session_doc)
-#         mongo_id = str(result.inserted_id)
-
-#         logging.info(f"💾 Session {room_id} saved with {len(messages)} messages")
-
-#         return SaveSessionResponse(
-#             ok=True,
-#             room_id=room_id,
-#             mongo_id=mongo_id,
-#             total_messages=len(messages),
-#         )
-
-#     except Exception as e:
-#         logging.exception("Save error")
-#         raise HTTPException(500, str(e))
-
-
 @app.post("/save-session", response_model=SaveSessionResponse)
 async def save_session(room_id: str = Query(...)):
     try:
@@ -380,6 +483,10 @@ async def save_session(room_id: str = Query(...)):
         existing_session = sessions_collection.find_one({"session_id": room_id})
         
         if existing_session:
+            # ✅ NEW: Analyze the full conversation at the end
+            logging.info(f"🔍 Analyzing full conversation with {len(messages)} messages")
+            full_analysis = analyze_full_conversation(messages)
+            
             # Update existing session
             sessions_collection.update_one(
                 {"session_id": room_id},
@@ -387,20 +494,24 @@ async def save_session(room_id: str = Query(...)):
                     "$set": {
                         "messages": messages,
                         "total_messages": len(messages),
-                        "latest_analysis": ANALYSIS_STORE.get(room_id),
+                        "latest_analysis": full_analysis,  # ✅ CHANGED
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
                 }
             )
             mongo_id = str(existing_session["_id"])
         else:
+            # ✅ NEW: Analyze the full conversation at the end
+            logging.info(f"🔍 Analyzing full conversation with {len(messages)} messages")
+            full_analysis = analyze_full_conversation(messages)
+            
             # Create new session
             session_doc = {
                 "session_id": room_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "messages": messages,
                 "total_messages": len(messages),
-                "latest_analysis": ANALYSIS_STORE.get(room_id),
+                "latest_analysis": full_analysis,  # ✅ CHANGED
             }
             result = sessions_collection.insert_one(session_doc)
             mongo_id = str(result.inserted_id)
@@ -419,9 +530,7 @@ async def save_session(room_id: str = Query(...)):
     except Exception as e:
         logging.exception("Save error")
         raise HTTPException(500, str(e))
-
-
-
+    
 # -------------------------------------------------------------------
 # GET CONVERSATIONS (IN-MEMORY ONLY)
 # -------------------------------------------------------------------

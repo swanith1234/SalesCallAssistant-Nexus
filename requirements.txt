@@ -31,3 +31,4 @@ asyncio
 # --- Authentication / Password Hashing ---
 bcrypt
 python-jose[cryptography]
+email-validator

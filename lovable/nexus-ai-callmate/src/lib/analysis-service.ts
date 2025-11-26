@@ -26,7 +26,7 @@ export interface MessagesResponse {
   messages: Message[];
 }
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://salescallassistant-nexus.onrender.com";
 
 /**
  * Fetch the latest sentiment analysis for a room

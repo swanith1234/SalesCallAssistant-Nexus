@@ -9,6 +9,7 @@ import {
   Loader2,
   Lightbulb,
   MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +46,20 @@ const SENTIMENT_UI = {
   },
 };
 
+// Country codes with flags
+const COUNTRY_CODES = [
+  { code: "+1", country: "US", flag: "🇺🇸", pattern: /^\d{10}$/ },
+  { code: "+91", country: "IN", flag: "🇮🇳", pattern: /^\d{10}$/ },
+  { code: "+44", country: "GB", flag: "🇬🇧", pattern: /^\d{10}$/ },
+  { code: "+61", country: "AU", flag: "🇦🇺", pattern: /^\d{9}$/ },
+  { code: "+81", country: "JP", flag: "🇯🇵", pattern: /^\d{10}$/ },
+  { code: "+86", country: "CN", flag: "🇨🇳", pattern: /^\d{11}$/ },
+  { code: "+49", country: "DE", flag: "🇩🇪", pattern: /^\d{10,11}$/ },
+  { code: "+33", country: "FR", flag: "🇫🇷", pattern: /^\d{9}$/ },
+  { code: "+39", country: "IT", flag: "🇮🇹", pattern: /^\d{10}$/ },
+  { code: "+34", country: "ES", flag: "🇪🇸", pattern: /^\d{9}$/ },
+];
+
 export default function LiveCall() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -53,12 +68,68 @@ export default function LiveCall() {
   const [roomName, setRoomName] = useState("");
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
-  const [phone, setPhone] = useState(""); // 🔥 PHONE NUMBER STATE
+
+  // Phone number states
+  const [countryCode, setCountryCode] = useState("+91");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const roomRef = useRef<Room | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const pollTimerRef = useRef<number | null>(null);
   const { toast } = useToast();
+
+  // ---------------------- FIXED VALIDATION ------------------------
+  const validatePhoneNumber = (number: string, code: string) => {
+    const selectedCountry = COUNTRY_CODES.find((c) => c.code === code);
+    if (!selectedCountry) return { valid: false, error: "Invalid country" };
+
+    const cleanNumber = number.replace(/\D/g, "");
+
+    if (!cleanNumber)
+      return { valid: false, error: "Phone number is required" };
+
+    if (!selectedCountry.pattern.test(cleanNumber)) {
+      return {
+        valid: false,
+        error: `Invalid phone number for ${selectedCountry.country}`,
+      };
+    }
+
+    return { valid: true, error: "" };
+  };
+
+  // Handle phone number input change
+  const handlePhoneChange = (value: string) => {
+    const cleaned = value.replace(/[^\d\s-]/g, "");
+    setPhoneNumber(cleaned);
+
+    if (cleaned) {
+      const result = validatePhoneNumber(cleaned, countryCode);
+      setPhoneError(result.error);
+    } else {
+      setPhoneError("");
+    }
+  };
+
+  // Handle country code change
+  const handleCountryCodeChange = (code: string) => {
+    setCountryCode(code);
+    if (phoneNumber) {
+      const result = validatePhoneNumber(phoneNumber, code);
+      setPhoneError(result.error);
+    }
+  };
+
+  const isFormValid = () => {
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
+    return validatePhoneNumber(cleanNumber, countryCode).valid;
+  };
+
+  const getFullPhoneNumber = () => {
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
+    return `${countryCode}${cleanNumber}`;
+  };
 
   // ---------------------- POLLING ------------------------
   const startPolling = (roomId: string) => {
@@ -88,6 +159,15 @@ export default function LiveCall() {
 
   // ---------------------- CONNECT ------------------------
   const connectToRoom = async () => {
+    if (!isFormValid()) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsConnecting(true);
       setStatus("Connecting...");
@@ -96,8 +176,7 @@ export default function LiveCall() {
       const participantName = `user-${Date.now()}`;
 
       const auth = JSON.parse(localStorage.getItem("auth") || "{}");
-      const userId =
-        auth?.user?._id || auth?.user?.id || auth?.userId || null;
+      const userId = auth?.user?._id || auth?.user?.id || auth?.userId || null;
 
       const tokenResp = await getLiveKitToken(
         newRoomName,
@@ -116,9 +195,9 @@ export default function LiveCall() {
           const audioElement = track.attach();
           audioElementRef.current = audioElement;
           document.body.appendChild(audioElement);
-          audioElement.play().catch((err) =>
-            console.error("Audio play error:", err)
-          );
+          audioElement
+            .play()
+            .catch((err) => console.error("Audio play error:", err));
         }
       });
 
@@ -188,10 +267,12 @@ export default function LiveCall() {
         const userId =
           auth?.user?._id || auth?.user?.id || auth?.userId || null;
 
-        // 🔥🔥🔥 IMPORTANT: PHONE NUMBER SENT HERE
         if (userId) {
+          const fullPhone = getFullPhoneNumber();
           await fetch(
-            `http://localhost:8000/end-call?room_id=${roomName}&userId=${userId}&phone_number=${phone}`,
+            `http://localhost:8000/end-call?room_id=${roomName}&userId=${userId}&phone_number=${encodeURIComponent(
+              fullPhone
+            )}`,
             {
               method: "POST",
             }
@@ -244,8 +325,12 @@ export default function LiveCall() {
 
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className={`w-3 h-3 rounded-full ${s.pulseColor} animate-pulse`} />
-              <div className={`absolute inset-0 ${s.pulseColor} opacity-40 blur-sm`} />
+              <div
+                className={`w-3 h-3 rounded-full ${s.pulseColor} animate-pulse`}
+              />
+              <div
+                className={`absolute inset-0 ${s.pulseColor} opacity-40 blur-sm`}
+              />
             </div>
             <Badge variant={s.badgeVariant} className="text-base">
               {s.emoji} {s.label}{" "}
@@ -259,17 +344,82 @@ export default function LiveCall() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* PHONE NUMBER INPUT */}
+          {!isConnected && (
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-lg">Customer Phone Number</CardTitle>
+                <CardDescription>
+                  Enter the customer's phone number to start the call
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-3">
+                  {/* Country Code Dropdown */}
+                  <div className="w-32">
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Country
+                    </label>
+                    <select
+                      value={countryCode}
+                      onChange={(e) => handleCountryCodeChange(e.target.value)}
+                      className="w-full h-12 px-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      disabled={isConnecting}
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-          {/* 🔥 PHONE NUMBER INPUT */}
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Enter phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="border p-2 rounded w-full bg-white text-black"
-            />
-          </div>
+                  {/* Phone Number Input */}
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="Enter phone number"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      className={`w-full h-12 px-4 rounded-md border ${
+                        phoneError
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-input focus:ring-primary"
+                      } bg-background text-foreground focus:outline-none focus:ring-2 transition-colors`}
+                      disabled={isConnecting}
+                    />
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {phoneError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{phoneError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Helper Text */}
+                {!phoneError && phoneNumber && isFormValid() && (
+                  <Alert>
+                    <AlertDescription className="text-green-600 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      Valid phone number: {getFullPhoneNumber()}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {!phoneNumber && (
+                  <p className="text-sm text-muted-foreground">
+                    💡 Enter the customer's phone number to enable calling
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* STATUS CARD */}
           <div className="bg-secondary/20 rounded-lg p-4 text-center">
@@ -295,7 +445,7 @@ export default function LiveCall() {
             {!isConnected ? (
               <Button
                 onClick={connectToRoom}
-                disabled={isConnecting}
+                disabled={isConnecting || !isFormValid()}
                 className="flex-1 h-14 text-lg"
                 size="lg"
               >
@@ -349,9 +499,7 @@ export default function LiveCall() {
             <Alert>
               <AlertDescription className="flex items-center justify-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                {isMuted
-                  ? "Microphone muted"
-                  : "Microphone active - Speak now"}
+                {isMuted ? "Microphone muted" : "Microphone active - Speak now"}
               </AlertDescription>
             </Alert>
           )}
@@ -426,28 +574,6 @@ export default function LiveCall() {
               </CardContent>
             </Card>
           </div>
-
-          <Alert variant="default" className="bg-blue-50">
-            <AlertDescription className="text-sm">
-              <p className="font-semibold mb-2">Troubleshooting:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>
-                  Ensure your agent is running:{" "}
-                  <code className="bg-gray-200 px-1 rounded">
-                    python agent.py dev
-                  </code>
-                </li>
-                <li>
-                  Backend:{" "}
-                  <code className="bg-gray-200 px-1 rounded">
-                    http://localhost:8000
-                  </code>
-                </li>
-                <li>Check browser microphone permissions</li>
-                <li>Make sure LiveKit worker is running</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
     </div>

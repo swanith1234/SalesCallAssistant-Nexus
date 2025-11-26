@@ -35,6 +35,7 @@ export async function fetchLatestAnalysis(
   roomId: string
 ): Promise<AnalysisResponse> {
   const res = await fetch(`${API_BASE}/analysis/${roomId}`);
+  console.log("fetchLatestAnalysis response:", res);
   if (!res.ok) {
     throw new Error(`Failed to fetch analysis: ${res.statusText}`);
   }

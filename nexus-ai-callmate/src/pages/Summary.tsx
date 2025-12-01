@@ -7,16 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import { fetchSession, CallSession } from "@/lib/analysis-service";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Summary = () => {
   const { id } = useParams<{ id: string }>();
   const [session, setSession] = useState<CallSession | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { token } = useAuth();
 
   useEffect(() => {
     const loadSession = async () => {
-      if (!id) return;
+      if (!id || !token) return;
       
       try {
         const data = await fetchSession(id);
@@ -34,7 +36,7 @@ const Summary = () => {
     };
     
     loadSession();
-  }, [id, toast]);
+  }, [id, token, toast]);
 
   if (loading) {
     return (

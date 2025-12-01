@@ -37,3 +37,8 @@ fastapi[all]
 # --- Authentication / Password Hashing ---
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==4.0.1
+cryptography
+
+# Additional dependencies for passlib and jose
+pyasn1

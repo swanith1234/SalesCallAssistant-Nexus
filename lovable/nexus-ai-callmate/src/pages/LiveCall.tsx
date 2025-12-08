@@ -79,7 +79,7 @@ export default function LiveCall() {
   const pollTimerRef = useRef<number | null>(null);
   const { toast } = useToast();
 
-  // ---------------------- FIXED VALIDATION ------------------------
+  // Validate phone number based on country code
   const validatePhoneNumber = (number: string, code: string) => {
     const selectedCountry = COUNTRY_CODES.find((c) => c.code === code);
     if (!selectedCountry) return { valid: false, error: "Invalid country" };
@@ -121,11 +121,13 @@ export default function LiveCall() {
     }
   };
 
+  // Check if form is valid
   const isFormValid = () => {
     const cleanNumber = phoneNumber.replace(/\D/g, "");
     return validatePhoneNumber(cleanNumber, countryCode).valid;
   };
 
+  // Get full phone number
   const getFullPhoneNumber = () => {
     const cleanNumber = phoneNumber.replace(/\D/g, "");
     return `${countryCode}${cleanNumber}`;
@@ -159,6 +161,7 @@ export default function LiveCall() {
 
   // ---------------------- CONNECT ------------------------
   const connectToRoom = async () => {
+    // Final validation before connecting
     if (!isFormValid()) {
       toast({
         title: "Invalid Phone Number",

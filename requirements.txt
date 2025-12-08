@@ -32,3 +32,5 @@ asyncio
 bcrypt
 python-jose[cryptography]
 email-validator
+groq
+openai

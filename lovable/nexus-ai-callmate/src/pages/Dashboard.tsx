@@ -98,15 +98,12 @@ const Dashboard = () => {
     // Fetch dashboard stats
     const fetchStats = async () => {
       try {
-        const response = await fetch(
-          `https://salescallassistant-nexus.onrender.com/dashboard/stats`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`http://localhost:8000/dashboard/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -124,15 +121,12 @@ const Dashboard = () => {
     // Fetch recent calls
     const fetchCalls = async () => {
       try {
-        const response = await fetch(
-          `https://salescallassistant-nexus.onrender.com/recent-calls`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`http://localhost:8000/recent-calls`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
